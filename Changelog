@@ -1,0 +1,10 @@
+2010/03/06:
+1. sesnmp_mpd.erl: enlarge the max_message_size
+
+get_max_message_size() ->
+-    1024.
++    %%Notice: 
++    20480.
+
+%%-----------------------------------------------------------------
+%% Version(s) functions

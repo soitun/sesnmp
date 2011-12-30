@@ -1,0 +1,1 @@
+-record(mib_object, {name, oid, mapping, format}).
