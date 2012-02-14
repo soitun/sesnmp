@@ -2,11 +2,9 @@
 
 -behaviour(application).
 
--define(APPLICATION, sesnmp).
+-define(APP, sesnmp).
 
 -export([start/0, stop/0]).
-
--export([test_start/0]).
 
 %%%-----------------------------------------------------------------
 %%% application callbacks
@@ -14,20 +12,15 @@
 -export([start/2, stop/1]).
 
 start() ->
-    application:start(?APPLICATION).
+    application:start(?APP).
 
 stop() ->
-    application:stop(?APPLICATION).
+    application:stop(?APP).
 
 start(normal, []) ->
-    Opts = application:get_all_env(?APPLICATION),
-    sesnmp_sup:start_link(Opts).
+    Env = application:get_all_env(?APP),
+    sesnmp_sup:start_link(Env).
 
 stop(_) ->
     ok.
-
-test_start() ->
-    application:start(cryto),
-    elog:init(5, "var/log/sesnmp.log"),
-    start().
 

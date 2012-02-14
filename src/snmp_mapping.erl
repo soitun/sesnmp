@@ -11,8 +11,6 @@
 
 -author('ery.lee@gmail.com').
 
--include("elog.hrl").
-
 -include_lib("snmp/include/snmp_types.hrl").
 
 -export([discovery/2, 

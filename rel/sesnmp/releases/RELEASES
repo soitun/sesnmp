@@ -1,0 +1,12 @@
+[{release,"sesnmp","2.0","5.8.5",
+          [{kernel,"2.14.5",
+                   "/Users/ery/workspace/sesnmp/rel/sesnmp/lib/kernel-2.14.5"},
+           {stdlib,"1.17.5",
+                   "/Users/ery/workspace/sesnmp/rel/sesnmp/lib/stdlib-1.17.5"},
+           {sasl,"2.1.10",
+                 "/Users/ery/workspace/sesnmp/rel/sesnmp/lib/sasl-2.1.10"},
+           {sesnmp,"2.0",
+                   "/Users/ery/workspace/sesnmp/rel/sesnmp/lib/sesnmp-2.0"},
+           {snmp,"4.21.1",
+                 "/Users/ery/workspace/sesnmp/rel/sesnmp/lib/snmp-4.21.1"}],
+          permanent}].

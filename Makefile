@@ -1,10 +1,9 @@
-all: deps
-	(cd src;$(MAKE))
+all:
+	./rebar compile
 
-deps:
-	cp ../elog/ebin/* ebin
-	cp ../elog/include/* include 
+dist:
+	rm -rf rel/sesnmp
+	./rebar generate
 
 clean:
-	(cd src;$(MAKE) clean)
-
+	./rebar clean

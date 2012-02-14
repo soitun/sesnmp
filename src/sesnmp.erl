@@ -8,8 +8,6 @@
 
 -include_lib("snmp/include/snmp_types.hrl").
 
--include("elog.hrl").
-
 -define(PORT, 161).
 
 -define(RETRIES, 2).

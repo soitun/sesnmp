@@ -4,12 +4,21 @@
 -module(sesnmp_server).
 
 %% User interface
--export([start_link/0, next_req_id/0, stop/0, insert/1, lookup/1, delete/1, down/1]).
+-export([start_link/0,
+		next_req_id/0,
+		stop/0,
+		insert/1,
+		lookup/1,
+		delete/1,
+		down/1]).
 
 %% Internal exports
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
-
--include("elog.hrl").
+-export([init/1,
+		handle_call/3,
+		handle_cast/2,
+		handle_info/2,
+		code_change/3,
+		terminate/2]).
 
 -include("sesnmp_internal.hrl").
 
@@ -67,8 +76,7 @@ handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
 
 handle_call(Req, _From, State) ->
-    ?WARNING("unexpected request: ~p", [Req]),
-    {reply, {error, unexpected_request}, State}.
+    {stop, {badreq, Req}, State}.
 
 handle_cast({delete, ReqId}, State) ->
     ets:delete(sesnmp_request_table, ReqId),
@@ -84,12 +92,10 @@ handle_cast({down, MonRef}, State) ->
     {noreply, State};
 
 handle_cast(Msg, State) ->
-    ?WARNING("unexpected message: ~p", [Msg]),
-    {noreply, State}.
+    {stop, {badcast, Msg}, State}.
 
 handle_info(Info, State) ->
-    ?WARNING("unexpected info: ~p", [Info]),
-    {noreply, State}.
+    {stop, {badinfo, Info}, State}.
 
 code_change(_Vsn, State, _Extra) ->
     {ok, State}.

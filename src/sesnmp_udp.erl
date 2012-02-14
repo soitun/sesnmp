@@ -6,9 +6,12 @@
 -export([start_link/2, stop/1, send_pdu/5]).
 
 %% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
-
--include("elog.hrl").
+-export([init/1,
+		handle_call/3,
+		handle_cast/2,
+		handle_info/2,
+		code_change/3,
+		terminate/2]).
 
 -include_lib("snmp/include/snmp_types.hrl").
 
@@ -102,12 +105,10 @@ sndbuf(Sz) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %%--------------------------------------------------------------------
 handle_call(stop, _From, State) ->
-    ?INFO("received stop request", []),
     {stop, normal, ok, State};
 
 handle_call(Req, _From, State) ->
-    ?WARNING("unexpected request: ~p", [Req]),
-    {reply, {error, {invalid_request, Req}}, State}.
+    {stop, {badcall, Req}, State}.
 
 %%--------------------------------------------------------------------
 %% Func: handle_cast/2
@@ -116,17 +117,16 @@ handle_call(Req, _From, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %%--------------------------------------------------------------------
 handle_cast({send_pdu, Addr, Port, Pdu, MsgData}, State) ->
-    ?DEBUG("received send_pdu message with"
-	  "~n   Pdu:     ~p"
-	  "~n   MsgData: ~p"
-	  "~n   Addr:    ~p"
-	  "~n   Port:    ~p", [Pdu, MsgData, Addr, Port]),
+    %?DEBUG("received send_pdu message with"
+	%  "~n   Pdu:     ~p"
+	%  "~n   MsgData: ~p"
+	%  "~n   Addr:    ~p"
+	%  "~n   Port:    ~p", [Pdu, MsgData, Addr, Port]),
     handle_send_pdu(Addr, Port, Pdu, MsgData, State), 
     {noreply, State};
 
 handle_cast(Msg, State) ->
-    ?WARNING("unexpected message: ~n~p", [Msg]),
-    {noreply, State}.
+    {stop, {badcast, Msg}, State}.
 
 %%--------------------------------------------------------------------
 %% Func: handle_info/2
@@ -135,13 +135,12 @@ handle_cast(Msg, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %%--------------------------------------------------------------------
 handle_info({udp, Sock, Ip, Port, Bytes}, #state{sock = Sock} = State) ->
-    ?DEBUG("received ~w bytes from ~p:~p", [size(Bytes), Ip, Port]),
+    %?DEBUG("received ~w bytes from ~p:~p", [size(Bytes), Ip, Port]),
     handle_recv_msg(Ip, Port, Bytes, State),
     {noreply, State};
 
 handle_info(Info, State) ->
-    ?WARNING("unexpected info: ~n~p", [Info]),
-    {noreply, State}.
+    {stop, {badinfo, Info}, State}.
 
 %%--------------------------------------------------------------------
 %% Func: terminate/2
@@ -184,12 +183,12 @@ handle_recv_msg(Addr, Port, Bytes,
 	    Pid ! {snmp_pdu, Pdu, Addr, Port};
 
 	{discarded, Reason} ->
-	    ?DEBUG("discarded: ~p", [Reason]),
+	    %?DEBUG("discarded: ~p", [Reason]),
 	    ErrorInfo = {failed_processing_message, Reason},
 	    Pid ! {snmp_error, ErrorInfo, Addr, Port},
 	    ok;
-	Error ->
-	    ?ERROR("processing of received message failed: ~n ~p", [Error]),
+	_Error ->
+	    %?ERROR("processing of received message failed: ~n ~p", [Error]),
 	    ok
     end.
 
@@ -197,10 +196,10 @@ handle_send_pdu(Addr, Port, Pdu, MsgData,
 		#state{server = Pid, sock = Sock}) ->
     case (catch sesnmp_mpd:generate_msg(Pdu, MsgData)) of
 	{ok, Msg} ->
-	    ?DEBUG("handle_send_pdu -> message generated", []),
+	    %?DEBUG("handle_send_pdu -> message generated", []),
 	    udp_send(Sock, Addr, Port, Msg);	    
 	{discarded, Reason} ->
-	    ?WARNING("PDU not sent: "
+	    error_logger:error_msg("PDU not sent: "
 		  "~n   PDU:    ~p"
 		  "~n   Reason: ~p", [Pdu, Reason]),
 	    Pid ! {snmp_error, Pdu, Reason},
@@ -210,13 +209,13 @@ handle_send_pdu(Addr, Port, Pdu, MsgData,
 udp_send(Sock, Addr, Port, Msg) ->
     case (catch gen_udp:send(Sock, Addr, Port, Msg)) of
 	ok ->
-	    ?DEBUG("sent ~w bytes to ~w:~w [~w]", [sz(Msg), Addr, Port, Sock]),
+	    %?DEBUG("sent ~w bytes to ~w:~w [~w]", [sz(Msg), Addr, Port, Sock]),
 	    ok;
 	{error, Reason} ->
-	    ?ERROR("failed sending message to ~p:~p: "
+	    error_logger:error_msg("failed sending message to ~p:~p: "
 		      "~n   ~p",[Addr, Port, Reason]);
 	Error ->
-	    ?ERROR("failed sending message to ~p:~p: "
+	    error_logger:error_msg("failed sending message to ~p:~p: "
 		      "~n   ~p",[Addr, Port, Error])
     end.
 

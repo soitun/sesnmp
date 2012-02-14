@@ -12,9 +12,12 @@
         set/4, set/5]).
 
 %% Internal exports
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3, terminate/2]).
-
--include("elog.hrl").
+-export([init/1,
+		handle_call/3,
+		handle_cast/2,
+		handle_info/2,
+		code_change/3,
+		terminate/2]).
 
 -include_lib("snmp/include/snmp_types.hrl").
 
@@ -154,12 +157,10 @@ handle_call(stop, _From, State) ->
     {stop, normal, ok, State};
 
 handle_call(Req, _From, State) ->
-    ?WARNING("unexpected request: ~p", [Req]),
-    {reply, {error, unexpected_request}, State}.
+    {stop, {badcall, Req}, State}.
 
 handle_cast(Msg, State) ->
-    ?WARNING("unexpected message: ~p", [Msg]),
-    {noreply, State}.
+    {stop, {badcast, Msg}, State}.
     
 handle_info({sync_timeout, ReqId, From}, State) ->
     %?WARNING("received sync_timeout [~w] message", [ReqId]),
@@ -169,7 +170,8 @@ handle_info({sync_timeout, ReqId, From}, State) ->
 	    maybe_demonitor(MonRef),
 	    delete_req(ReqId);
 	_ ->
-        ?WARNING("cannot lookup request: ~p", [ReqId])
+		ignore
+        %?WARNING("cannot lookup request: ~p", [ReqId])
     end,
     {noreply, State};
 
@@ -178,7 +180,7 @@ handle_info({snmp_pdu, Pdu, Addr, Port}, State) ->
     {noreply, State};
 
 handle_info({snmp_trap, Trap, Addr, Port}, State) ->
-    ?WARNING("unexpected snmp_trap message", [Addr, Port, Trap]),
+    error_logger:warning_msg("unexpected snmp_trap message", [Addr, Port, Trap]),
     {noreply, State};
 
 handle_info({snmp_error, Pdu, Reason}, State) ->
@@ -203,7 +205,7 @@ handle_info({'DOWN', MonRef, process, _Pid, _Reason}, State) ->
     {noreply, State};
 
 handle_info(Info, State) ->
-    ?WARNING("received unknown info: ~p", [Info]),
+    error_logger:warning_msg("received unknown info: ~p", [Info]),
     {noreply, State}.
 
 code_change(_Vsn, State, _Extra) ->
@@ -292,18 +294,18 @@ handle_snmp_error(#pdu{request_id = ReqId} = _Pdu, Reason, _State) ->
 	    delete_req(ReqId),
 	    ok;
 	_ ->
-		?ERROR("unexpected snmp error: ~p, ~p",[ReqId, Reason])
+		error_logger:error_msg("unexpected snmp error: ~p, ~p~n",[ReqId, Reason])
     end;
 
 handle_snmp_error(CrapError, Reason, _State) ->
-    ?ERROR("received crap (snmp) error => ~n~p~n~p", [CrapError, Reason]),
+    error_logger:error_msg("received crap (snmp) error => ~n~p~n~p~n", [CrapError, Reason]),
     ok.
 
 handle_snmp_error(Addr, Port, ReqId, Reason, _State) ->
-    ?WARNING("snmp error: ~p ~p ~p ~p", [Addr, Port, ReqId, Reason]).
+    error_logger:warning_msg("snmp error: ~p ~p ~p ~p", [Addr, Port, ReqId, Reason]).
 
 handle_snmp_pdu(#pdu{type = 'get-response', request_id = ReqId} = Pdu, 
-    _Addr, _Port, _State) ->
+    Addr, _Port, _State) ->
     case lookup_req(ReqId) of
 	[#request{ref = Ref, mon = MonRef, from = From}] -> 
 	    Remaining = 
@@ -313,7 +315,7 @@ handle_snmp_pdu(#pdu{type = 'get-response', request_id = ReqId} = Pdu,
 		    _ ->
 			0
 		end,
-	    ?DEBUG("handle_snmp_pdu(get-response) -> Remaining: ~p", [Remaining]),
+	    %?DEBUG("handle_snmp_pdu(get-response) -> Remaining: ~p", [Remaining]),
 	    maybe_demonitor(MonRef),
 	    #pdu{error_status = EStatus, 
 		 error_index  = EIndex, 
@@ -324,13 +326,13 @@ handle_snmp_pdu(#pdu{type = 'get-response', request_id = ReqId} = Pdu,
 	    delete_req(ReqId),
 	    ok;
 	_ ->
-        ?ERROR("delay get-response: ~p", [ReqId]),
+        error_logger:warning_msg("delay get-response '~p' from ~p~n", [ReqId, Addr]),
         ok
 	end;
 
 handle_snmp_pdu(CrapPdu, Addr, Port, _State) ->
-    ?ERROR("received crap (snmp) Pdu from ~w:~w =>"
-	      "~p", [Addr, Port, CrapPdu]),
+    error_logger:error_msg("received crap (snmp) Pdu from ~w:~w =>"
+	      "~p~n", [Addr, Port, CrapPdu]),
     ok.
 
 %%----------------------------------------------------------------------
