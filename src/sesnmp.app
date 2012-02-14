@@ -1,6 +1,6 @@
 {application, sesnmp,
- [{description, "sesnmp"},
-  {vsn, "1.0.0"},
+ [{description, "Simpler SNMP Client Library"},
+  {vsn, "2.0"},
   {modules, [sesnmp, 
              sesnmp_app, 
              sesnmp_client, 
@@ -13,6 +13,6 @@
              sesnmp_trapd, 
              sesnmp_udp]},
   {registered, []},
-  {applications, [kernel, stdlib]},
+  {applications, [kernel, stdlib, sasl]},
   {env, []},
   {mod, {sesnmp_app, []}}]}.
