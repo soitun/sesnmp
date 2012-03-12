@@ -92,7 +92,13 @@ get_table(Addr, Port, Col1Oid, Columns, AgentData, TIMEOUT, Acc) ->
             true ->
                 NewOids = lists:map(fun(Varbind) -> Varbind#varbind.oid end, Varbinds),
                 NewColumns = to_name_oid_map(Names, NewOids),
-                get_table(Addr, Port, Col1Oid, NewColumns, AgentData, TIMEOUT, [ [{tableIndex, Oid -- Col1Oid} | merge_vars(Names, Varbinds)] | Acc]);
+				Row = [{'$tableIndex', Oid -- Col1Oid} | merge_vars(Names, Varbinds)],
+				Row1 = 
+				case proplists:get_value(timestamp, AgentData) of
+				true -> [{'$timestamp', extbif:timestamp()} | Row];
+				undefined -> Row
+				end,
+                get_table(Addr, Port, Col1Oid, NewColumns, AgentData, TIMEOUT, [Row1 | Acc]);
             false ->
                 {ok, Acc}
             end;
