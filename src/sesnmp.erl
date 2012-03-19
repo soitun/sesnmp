@@ -36,7 +36,7 @@ get_group(Addr, Port, Scalars, AgentData, Timeout) ->
 		{ok, merge_vars(Names, Varbinds)};
     {ok, Error, _} ->
         {error, Error};
-	Error -> 
+	{error, Error} -> 
 		{error, Error}
 	end.
 
@@ -51,7 +51,7 @@ set(Addr, Port, VarVals, AgentData) ->
 		{ok, merge_vars(Names, Varbinds)}; %TODO
     {ok, Error, _} ->
         {error, Error};
-	Error ->
+	{error, Error} ->
 		{error, Error}
 	end.
     
@@ -104,7 +104,7 @@ get_table(Addr, Port, Col1Oid, Columns, AgentData, TIMEOUT, Acc) ->
             end;
         {ok, Error, _} ->
             {error, Error};
-        Error -> 
+        {error, Error} -> 
             {error, Error}
         end
     end.
@@ -123,7 +123,7 @@ get_entry(Addr, Port, Columns, Indices, AgentData) ->
 		{ok, merge_vars(Names, Varbinds)};
     {ok, Error, _} ->
         {error, Error};
-	Error -> 
+	{error, Error} -> 
 		{error, Error}
 	end.
 
