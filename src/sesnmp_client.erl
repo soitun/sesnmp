@@ -3,6 +3,8 @@
 %%----------------------------------------------------------------------
 -module(sesnmp_client).
 
+-include_lib("elog/include/elog.hrl").
+
 %% User interface
 -export([start_link/1, 
         stop/1, 
@@ -180,7 +182,7 @@ handle_info({snmp_pdu, Pdu, Addr, Port}, State) ->
     {noreply, State};
 
 handle_info({snmp_trap, Trap, Addr, Port}, State) ->
-    error_logger:warning_msg("unexpected snmp_trap message", [Addr, Port, Trap]),
+    ?WARNING("unexpected snmp_trap message", [Addr, Port, Trap]),
     {noreply, State};
 
 handle_info({snmp_error, Pdu, Reason}, State) ->
@@ -205,7 +207,7 @@ handle_info({'DOWN', MonRef, process, _Pid, _Reason}, State) ->
     {noreply, State};
 
 handle_info(Info, State) ->
-    error_logger:warning_msg("received unknown info: ~p", [Info]),
+    ?WARNING("received unknown info: ~p", [Info]),
     {noreply, State}.
 
 code_change(_Vsn, State, _Extra) ->
@@ -294,15 +296,15 @@ handle_snmp_error(#pdu{request_id = ReqId} = _Pdu, Reason, _State) ->
 	    delete_req(ReqId),
 	    ok;
 	_ ->
-		error_logger:error_msg("unexpected snmp error: ~p, ~p~n",[ReqId, Reason])
+		?ERROR("unexpected snmp error: ~p, ~p~n",[ReqId, Reason])
     end;
 
 handle_snmp_error(CrapError, Reason, _State) ->
-    error_logger:error_msg("received crap (snmp) error => ~n~p~n~p~n", [CrapError, Reason]),
+    ?ERROR("received crap (snmp) error => ~n~p~n~p~n", [CrapError, Reason]),
     ok.
 
 handle_snmp_error(Addr, Port, ReqId, Reason, _State) ->
-    error_logger:warning_msg("snmp error: ~p ~p ~p ~p", [Addr, Port, ReqId, Reason]).
+    ?WARNING("snmp error: ~p ~p ~p ~p", [Addr, Port, ReqId, Reason]).
 
 handle_snmp_pdu(#pdu{type = 'get-response', request_id = ReqId} = Pdu, 
     Addr, _Port, _State) ->
@@ -315,7 +317,7 @@ handle_snmp_pdu(#pdu{type = 'get-response', request_id = ReqId} = Pdu,
 		    _ ->
 			0
 		end,
-	    %?DEBUG("handle_snmp_pdu(get-response) -> Remaining: ~p", [Remaining]),
+	    ?DEBUG("handle_snmp_pdu(get-response) -> Remaining: ~p", [Remaining]),
 	    maybe_demonitor(MonRef),
 	    #pdu{error_status = EStatus, 
 		 error_index  = EIndex, 
@@ -326,12 +328,12 @@ handle_snmp_pdu(#pdu{type = 'get-response', request_id = ReqId} = Pdu,
 	    delete_req(ReqId),
 	    ok;
 	_ ->
-        error_logger:warning_msg("delay get-response '~p' from ~p~n", [ReqId, Addr]),
+        ?WARNING("delay get-response '~p' from ~p~n", [ReqId, Addr]),
         ok
 	end;
 
 handle_snmp_pdu(CrapPdu, Addr, Port, _State) ->
-    error_logger:error_msg("received crap (snmp) Pdu from ~w:~w =>"
+    ?ERROR("received crap (snmp) Pdu from ~w:~w =>"
 	      "~p~n", [Addr, Port, CrapPdu]),
     ok.
 

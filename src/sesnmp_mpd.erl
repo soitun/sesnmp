@@ -4,6 +4,8 @@
 		process_msg/4,
 		generate_msg/2]).
 
+-include_lib("elog/include/elog.hrl").
+
 -include_lib("snmp/include/snmp_types.hrl").
 
 -define(empty_msg_size, 24).
@@ -62,17 +64,17 @@ process_msg(Msg, Addr, Port, State) ->
 
 	%% Crap
 	{'EXIT', {bad_version, Vsn}} ->
-	    %?INFO("exit: bad version: ~p",[Vsn]),
+	    ?INFO("exit: bad version: ~p",[Vsn]),
 	    {discarded, snmpInBadVersions};
 
 	%% More crap
 	{'EXIT', Reason} ->
-	    %?INFO("exit: ~p",[Reason]),
+	    ?INFO("exit: ~p",[Reason]),
 	    {discarded, Reason};
 
 	%% Really crap
 	Crap ->
-	    %?INFO("unknown message: ~n ~p",[Crap]),
+	    ?INFO("unknown message: ~n ~p",[Crap]),
 	    {discarded, snmpInBadVersions}
     end.
 
@@ -81,27 +83,27 @@ process_msg(Msg, Addr, Port, State) ->
 %% Handles a Community based message (v1 or v2c).
 %%-----------------------------------------------------------------
 process_v1_v2c_msg(Vsn, _Msg, Addr, Port, Community, Data, HS) ->
-    %?DEBUG("process_v1_v2c_msg -> entry with"
-	%    "~n   Vsn:       ~p"
-	%    "~n   Addr:      ~p"
-	%    "~n   Port:      ~p"
-	%    "~n   Community: ~p"
-	%    "~n   HS:        ~p", [Vsn, Addr, Port, Community, HS]),
+    ?DEBUG("process_v1_v2c_msg -> entry with"
+	    "~n   Vsn:       ~p"
+	    "~n   Addr:      ~p"
+	    "~n   Port:      ~p"
+	    "~n   Community: ~p"
+	    "~n   HS:        ~p", [Vsn, Addr, Port, Community, HS]),
     
     Max      = get_max_message_size(),
     AgentMax = Max,
     PduMS    = pdu_ms(Max, AgentMax, HS),
 
-    %?DEBUG("process_v1_v2c_msg -> PduMS: ~p", [PduMS]),
+    ?DEBUG("process_v1_v2c_msg -> PduMS: ~p", [PduMS]),
     
     case (catch sesnmp_pdus:dec_pdu(Data)) of
 	Pdu when is_record(Pdu, pdu) ->
-	    %?DEBUG("process_v1_v2c_msg -> was a pdu", []),
+	    ?DEBUG_MSG("process_v1_v2c_msg -> was a pdu"),
 	    MsgData = {Community, sec_model(Vsn)},
 	    {ok, Vsn, Pdu, PduMS, MsgData};
 
 	Trap when is_record(Trap, trappdu) ->
-	    %?DEBUG("process_v1_v2c_msg -> was a trap", []),
+	    ?DEBUG_MSG("process_v1_v2c_msg -> was a trap"),
 	    MsgData = {Community, sec_model(Vsn)},
 	    {ok, Vsn, Trap, PduMS, MsgData};
 
@@ -142,7 +144,7 @@ generate_v1_v2c_msg(Vsn, Pdu, Community) ->
 		{ok, Packet} when size(Packet) =< MMS ->
             {ok, Packet};
 		{ok, Packet} ->
-            %?ERROR("packet is toobig: ~p, ~p, nms : ~p", [Packet, size(Packet), MMS]),
+            ?ERROR("packet is toobig: ~p, ~p, nms : ~p", [Packet, size(Packet), MMS]),
 		    {discarded, too_big}
 	    end
     end.

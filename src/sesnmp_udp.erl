@@ -1,5 +1,7 @@
 -module(sesnmp_udp).
 
+-include_lib("elog/include/elog.hrl").
+
 -behaviour(gen_server).
 
 %% Network Interface callback functions
@@ -117,11 +119,11 @@ handle_call(Req, _From, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %%--------------------------------------------------------------------
 handle_cast({send_pdu, Addr, Port, Pdu, MsgData}, State) ->
-    %?DEBUG("received send_pdu message with"
-	%  "~n   Pdu:     ~p"
-	%  "~n   MsgData: ~p"
-	%  "~n   Addr:    ~p"
-	%  "~n   Port:    ~p", [Pdu, MsgData, Addr, Port]),
+    ?DEBUG("received send_pdu message with"
+	  "~n   Pdu:     ~p"
+	  "~n   MsgData: ~p"
+	  "~n   Addr:    ~p"
+	  "~n   Port:    ~p", [Pdu, MsgData, Addr, Port]),
     handle_send_pdu(Addr, Port, Pdu, MsgData, State), 
     {noreply, State};
 
@@ -135,7 +137,7 @@ handle_cast(Msg, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %%--------------------------------------------------------------------
 handle_info({udp, Sock, Ip, Port, Bytes}, #state{sock = Sock} = State) ->
-    %?DEBUG("received ~w bytes from ~p:~p", [size(Bytes), Ip, Port]),
+    ?DEBUG("received ~w bytes from ~p:~p", [size(Bytes), Ip, Port]),
     handle_recv_msg(Ip, Port, Bytes, State),
     {noreply, State};
 
@@ -183,12 +185,12 @@ handle_recv_msg(Addr, Port, Bytes,
 	    Pid ! {snmp_pdu, Pdu, Addr, Port};
 
 	{discarded, Reason} ->
-	    %?DEBUG("discarded: ~p", [Reason]),
+	    ?DEBUG("discarded: ~p", [Reason]),
 	    ErrorInfo = {failed_processing_message, Reason},
 	    Pid ! {snmp_error, ErrorInfo, Addr, Port},
 	    ok;
-	_Error ->
-	    %?ERROR("processing of received message failed: ~n ~p", [Error]),
+	Error ->
+	    ?ERROR("processing of received message failed: ~n ~p", [Error]),
 	    ok
     end.
 
@@ -196,10 +198,10 @@ handle_send_pdu(Addr, Port, Pdu, MsgData,
 		#state{server = Pid, sock = Sock}) ->
     case (catch sesnmp_mpd:generate_msg(Pdu, MsgData)) of
 	{ok, Msg} ->
-	    %?DEBUG("handle_send_pdu -> message generated", []),
+	    ?DEBUG_MSG("handle_send_pdu -> message generated"),
 	    udp_send(Sock, Addr, Port, Msg);	    
 	{discarded, Reason} ->
-	    error_logger:error_msg("PDU not sent: "
+	    ?ERROR("PDU not sent: "
 		  "~n   PDU:    ~p"
 		  "~n   Reason: ~p", [Pdu, Reason]),
 	    Pid ! {snmp_error, Pdu, Reason},
@@ -209,13 +211,13 @@ handle_send_pdu(Addr, Port, Pdu, MsgData,
 udp_send(Sock, Addr, Port, Msg) ->
     case (catch gen_udp:send(Sock, Addr, Port, Msg)) of
 	ok ->
-	    %?DEBUG("sent ~w bytes to ~w:~w [~w]", [sz(Msg), Addr, Port, Sock]),
+	    ?DEBUG("sent ~w bytes to ~w:~w [~w]", [sz(Msg), Addr, Port, Sock]),
 	    ok;
 	{error, Reason} ->
-	    error_logger:error_msg("failed sending message to ~p:~p: "
+	    ?ERROR("failed sending message to ~p:~p: "
 		      "~n   ~p",[Addr, Port, Reason]);
 	Error ->
-	    error_logger:error_msg("failed sending message to ~p:~p: "
+	    ?ERROR("failed sending message to ~p:~p: "
 		      "~n   ~p",[Addr, Port, Error])
     end.
 

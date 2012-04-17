@@ -1,5 +1,7 @@
 -module(sesnmp_trapd).
 
+-include_lib("elog/include/elog.hrl").
+
 %% User interface
 -export([start_link/1, stop/0]).
 
@@ -83,10 +85,10 @@ handle_snmp_trap(#trappdu{enterprise    = Enteprise,
 			  varbinds      = Varbinds} = Trap, 
 		 Addr, Port, State) ->
 
-    %?DEBUG("handle_snmp_trap [trappdu] -> entry with"
-	%    "~n   Addr: ~p"
-	%    "~n   Port: ~p"
-	%    "~n   Trap: ~p", [Addr, Port, Trap]),
+    ?DEBUG("handle_snmp_trap [trappdu] -> entry with"
+	    "~n   Addr: ~p"
+	    "~n   Port: ~p"
+	    "~n   Trap: ~p", [Addr, Port, Trap]),
 
     SnmpTrapInfo = {Enteprise, Generic, Spec, Timestamp, Varbinds},
     do_handle_snmp_trap(SnmpTrapInfo, Addr, Port, State);
@@ -96,15 +98,15 @@ handle_snmp_trap(#pdu{error_status = EStatus,
 		      varbinds     = Varbinds} = Trap, 
 		 Addr, Port, State) ->
 
-    %?DEBUG("handle_snmp_trap [pdu] -> entry with"
-	%    "~n   Addr: ~p"
-	%    "~n   Port: ~p"
-	%    "~n   Trap: ~p", [Addr, Port, Trap]),
+    ?DEBUG("handle_snmp_trap [pdu] -> entry with"
+	    "~n   Addr: ~p"
+	    "~n   Port: ~p"
+	    "~n   Trap: ~p", [Addr, Port, Trap]),
     SnmpTrapInfo = {EStatus, EIndex, Varbinds},
     do_handle_snmp_trap(SnmpTrapInfo, Addr, Port, State);
 
 handle_snmp_trap(CrapTrap, Addr, Port, _State) ->
-    error_logger:error_msg("received crap (snmp) trap from ~w:~w =>"
+    ?ERROR("received crap (snmp) trap from ~w:~w =>"
 	      "~p", [Addr, Port, CrapTrap]),
     ok.
 
