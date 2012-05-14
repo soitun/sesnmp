@@ -41,10 +41,10 @@ get_table(Addr, Columns) ->
     sesnmp:get_table(Addr, Columns).
 
 get_table(Addr, Columns, AgentData) ->
-    sesnmp:get_table(Addr, Columns, AgentData).
+    sesnmp:get_table(Addr, map2oid(Columns), AgentData).
 
 get_table(Addr, Columns, AgentData, TIMEOUT) ->
-    sesnmp:get_table(Addr, Columns, AgentData, TIMEOUT).
+    sesnmp:get_table(Addr, map2oid(Columns), AgentData, TIMEOUT).
 
 get_entry(Addr, Columns, Indices) ->
     sesnmp:get_entry(Addr, Columns, Indices).
@@ -54,3 +54,15 @@ get_entry(Addr, Columns, Indices, AgentData) ->
 
 set_group(Addr, Scalars, AgentData) ->
     sesnmp:set(Addr, Scalars, AgentData).
+
+
+map2oid(MibItems) ->
+    lists:map(fun({Name, Oid}) ->
+        DotIdx = string:chr(Oid, $.),
+        if
+        (DotIdx > 0) and (DotIdx < 6) ->
+            {Name, [list_to_integer(O) || O <- string:tokens(Oid, ".")]};
+        true ->
+            {Name, Oid}
+        end
+    end, MibItems).
