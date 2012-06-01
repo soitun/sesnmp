@@ -69,8 +69,13 @@ do_init() ->
 handle_call(next_req_id, _From, #state{req_id = Id} = State) ->
     Id2 = 
 	if 
-	Id > 16#0FFFFFFF -> 1;
-	true -> Id + 1
+	Id > 16#0FFFFFFF ->
+		1;
+	Id < 0 -> 
+		error_logger:error_msg("fucking error reqid: ~p", [Id]),
+		random:uniform(16#00FFFF);
+	true -> 
+		Id + 1
 	end,
     {reply, Id2, State#state{req_id = Id2}};
 
